@@ -1,13 +1,20 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
+import { signOut } from '../services/supabase'
 
 export default function Layout() {
-  const { logout, user } = useAuthStore()
+  const { logout } = useAuthStore()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleLogout = async () => {
+    try {
+      await signOut()
+    } catch {
+      // ignore: backend auth still needs clearing
+    } finally {
+      logout()
+      navigate('/login', { replace: true })
+    }
   }
 
   return (
@@ -18,7 +25,7 @@ export default function Layout() {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-2xl font-bold text-primary-600">🌐 Credit Network</h1>
+                <h1 className="text-2xl font-bold text-primary-700">Credit Network</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 <Link
@@ -50,7 +57,7 @@ export default function Layout() {
             <div className="flex items-center">
               <button
                 onClick={handleLogout}
-                className="ml-4 px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="ml-4 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900"
               >
                 Logout
               </button>

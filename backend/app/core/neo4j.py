@@ -7,17 +7,23 @@ class Neo4jService:
     """Service for managing Neo4j graph database connections and operations."""
     
     def __init__(self):
-        self.driver = AsyncGraphDatabase.driver(
-            settings.NEO4J_URI,
-            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
-        )
+        self._disabled = str(settings.ENVIRONMENT).lower() == "test"
+        self.driver = None
+        if not self._disabled:
+            self.driver = AsyncGraphDatabase.driver(
+                settings.NEO4J_URI,
+                auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+            )
     
     async def close(self):
         """Close the driver connection."""
-        await self.driver.close()
+        if self.driver:
+            await self.driver.close()
     
     async def create_user_node(self, user_id: int, name: str, trust_score: float = 300):
         """Create or update a user node in Neo4j."""
+        if self._disabled:
+            return None
         async with self.driver.session() as session:
             query = """
             MERGE (u:User {user_id: $user_id})
@@ -34,6 +40,8 @@ class Neo4jService:
         weight: float = 1.0
     ):
         """Create a VOUCHES_FOR relationship between two users."""
+        if self._disabled:
+            return None
         async with self.driver.session() as session:
             query = """
             MATCH (voucher:User {user_id: $voucher_id})
@@ -61,6 +69,8 @@ class Neo4jService:
         role: str = "member"
     ):
         """Create MEMBER_OF relationship between user and community."""
+        if self._disabled:
+            return None
         async with self.driver.session() as session:
             query = """
             MATCH (u:User {user_id: $user_id})
@@ -80,6 +90,8 @@ class Neo4jService:
     
     async def get_user_vouch_count(self, user_id: int) -> int:
         """Get count of active vouches received by a user."""
+        if self._disabled:
+            return 0
         async with self.driver.session() as session:
             query = """
             MATCH (:User)-[v:VOUCHES_FOR]->(u:User {user_id: $user_id})
@@ -91,6 +103,8 @@ class Neo4jService:
     
     async def get_voucher_avg_score(self, user_id: int) -> float:
         """Get average trust score of users vouching for this user."""
+        if self._disabled:
+            return 0.0
         async with self.driver.session() as session:
             query = """
             MATCH (voucher:User)-[:VOUCHES_FOR]->(u:User {user_id: $user_id})
@@ -102,6 +116,8 @@ class Neo4jService:
     
     async def get_user_trust_graph(self, user_id: int, depth: int = 2) -> Dict:
         """Get trust graph around a user for visualization."""
+        if self._disabled:
+            return {"nodes": [], "edges": []}
         async with self.driver.session() as session:
             query = """
             MATCH path = (u:User {user_id: $user_id})-[v:VOUCHES_FOR*1..$depth]-(other:User)
@@ -143,6 +159,8 @@ class Neo4jService:
     
     async def get_community_members(self, community_id: int) -> List[int]:
         """Get all user IDs in a community."""
+        if self._disabled:
+            return []
         async with self.driver.session() as session:
             query = """
             MATCH (u:User)-[:MEMBER_OF]->(c:Community {community_id: $community_id})
@@ -154,6 +172,8 @@ class Neo4jService:
     
     async def update_vouch_repayment(self, voucher_id: int, vouchee_id: int, is_default: bool = False):
         """Update repayment or default count on vouch relationship."""
+        if self._disabled:
+            return None
         async with self.driver.session() as session:
             if is_default:
                 query = """

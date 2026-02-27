@@ -5,62 +5,83 @@ import { authAPI } from '../services/api'
 import { useAuthStore } from '../stores/authStore'
 
 export default function AuthCallback() {
-    const navigate = useNavigate()
-    const { login } = useAuthStore()
-    const [error, setError] = useState(null)
+  const navigate = useNavigate()
+  const { login } = useAuthStore()
+  const [error, setError] = useState(null)
 
-    useEffect(() => {
-        // Supabase automatically parses the URL hash into a session object, 
-        // we just need to wait for it and then act.
-        const handleAuthRedirect = async () => {
-            try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-
-                if (sessionError) throw sessionError
-                if (!session) throw new Error("No session found in URL")
-
-                // Try to log in with our custom backend
-                try {
-                    const response = await authAPI.oauthLogin({ access_token: session.access_token })
-                    login(response.data, response.data.user_id)
-                    navigate('/') // Successfully logged in
-                } catch (backendErr) {
-                    if (backendErr.response?.status === 404) {
-                        // User isn't in our PostgreSQL database yet, take them to register
-                        navigate('/register')
-                    } else {
-                        setError(backendErr.response?.data?.detail || backendErr.message || "Failed to authenticate with backend")
-                    }
-                }
-            } catch (err) {
-                setError(err.message)
-            }
+  useEffect(() => {
+    const handleAuthRedirect = async () => {
+      try {
+        const params = new URLSearchParams(window.location.search)
+        const oauthError = params.get('error') || params.get('error_code')
+        const oauthErrorDescription = params.get('error_description')
+        if (oauthError) {
+          throw new Error(oauthErrorDescription || oauthError)
         }
 
-        handleAuthRedirect()
-    }, [navigate, login])
+        // PKCE flow: if we have a code, exchange it for a session first.
+        const code = params.get('code')
+        if (code) {
+          const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+          if (exchangeError) throw exchangeError
+          if (!data?.session) throw new Error('Failed to establish session')
+        }
 
-    if (error) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                <div className="bg-red-50 text-red-600 p-4 rounded-md shadow-sm max-w-md w-full">
-                    <h3 className="font-bold text-lg mb-2">Authentication Error</h3>
-                    <p>{error}</p>
-                    <button
-                        onClick={() => navigate('/login')}
-                        className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                    >
-                        Return to Login
-                    </button>
-                </div>
-            </div>
-        )
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+        if (sessionError) throw sessionError
+        const session = sessionData?.session
+        if (!session?.access_token) {
+          throw new Error('No session found. Please try signing in again.')
+        }
+
+        try {
+          const response = await authAPI.oauthLogin({ access_token: session.access_token })
+          login(response.data, response.data.user_id)
+          navigate('/', { replace: true })
+        } catch (backendErr) {
+          if (backendErr.response?.status === 404) {
+            navigate('/register', { replace: true })
+          } else {
+            const detail = backendErr.response?.data?.detail
+            setError(detail || backendErr.message || 'Failed to authenticate with backend')
+          }
+        }
+      } catch (err) {
+        setError(err?.message || String(err))
+      }
     }
 
+    handleAuthRedirect()
+  }, [navigate, login])
+
+  if (error) {
     return (
-        <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            <span className="ml-3 text-gray-600">Completing sign in...</span>
+      <div className="min-h-screen grid place-items-center bg-slate-50 px-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-slate-900">Authentication error</h3>
+          <p className="mt-2 text-sm text-slate-600">{error}</p>
+          <button
+            onClick={() => navigate('/login', { replace: true })}
+            className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          >
+            Back to sign in
+          </button>
         </div>
+      </div>
     )
+  }
+
+  return (
+    <div className="min-h-screen grid place-items-center bg-slate-50 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600" />
+          <div>
+            <div className="text-sm font-semibold text-slate-900">Signing you in</div>
+            <div className="text-sm text-slate-600">Completing authentication…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

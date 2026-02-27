@@ -12,8 +12,15 @@ import Loans from './pages/Loans'
 import LoanApplication from './pages/LoanApplication'
 
 function PrivateRoute({ children }) {
-  const { isAuthenticated } = useAuthStore()
-  return isAuthenticated ? children : <Navigate to="/login" />
+  const { isAuthenticated, hydrated } = useAuthStore()
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-slate-50">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600" />
+      </div>
+    )
+  }
+  return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
 function App() {

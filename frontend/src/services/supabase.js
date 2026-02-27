@@ -1,27 +1,41 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zdwedezftuzyppkslxhr.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpkd2VkZXpmdHV6eXBwa3NseGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxOTA1MTQsImV4cCI6MjA1NTU1MDUxNH0.sb_publishable_GdvNrXJpowDfXkA90b-zKw_X8PZ86o8'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-export const signInWithGoogle = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-            redirectTo: `${window.location.origin}/auth/callback` // Or whatever your redirect URL is
-        }
-    })
-    if (error) throw error
-    return data
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'Missing Supabase env. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env'
+  )
 }
 
-export const getSession = async () => {
-    const { data, error } = await supabase.auth.getSession()
-    if (error) throw error
-    return data.session
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    flowType: 'pkce',
+    detectSessionInUrl: true,
+    persistSession: true,
+    autoRefreshToken: true,
+  },
+})
+
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+  if (error) throw error
+  return data
 }
 
-export const signOut = async () => {
-    await supabase.auth.signOut()
+export async function getSession() {
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error
+  return data.session
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }

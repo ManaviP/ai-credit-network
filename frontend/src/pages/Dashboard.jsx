@@ -44,7 +44,7 @@ export default function Dashboard() {
           Welcome back, {profile?.name}! 👋
         </h1>
         <p className="mt-2 text-gray-600">
-          Here's your credit profile overview
+          Here&apos;s your credit profile overview
         </p>
       </div>
 
