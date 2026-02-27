@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
-import { signInWithGoogle } from '../services/supabase'
+import { signInWithEmailOtp, signInWithGoogle } from '../services/supabase'
 
 export default function Login() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [emailSent, setEmailSent] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) navigate('/', { replace: true })
@@ -18,6 +20,22 @@ export default function Login() {
     try {
       setLoading(true)
       await signInWithGoogle()
+    } catch (err) {
+      setError(err?.message || String(err))
+      setLoading(false)
+    }
+  }
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault()
+    setError('')
+    setEmailSent(false)
+    try {
+      if (!email.trim()) throw new Error('Enter your email.')
+      setLoading(true)
+      await signInWithEmailOtp(email.trim())
+      setEmailSent(true)
+      setLoading(false)
     } catch (err) {
       setError(err?.message || String(err))
       setLoading(false)
@@ -47,6 +65,12 @@ export default function Login() {
               </div>
             )}
 
+            {emailSent && (
+              <div className="mt-5 rounded-xl border border-success/30 bg-success-light px-4 py-3 text-sm text-success-dark">
+                Magic link sent. Check your inbox and open the link to finish sign-in.
+              </div>
+            )}
+
             <button
               onClick={handleGoogleLogin}
               disabled={loading}
@@ -60,6 +84,32 @@ export default function Login() {
               </svg>
               {loading ? 'Connecting…' : 'Continue with Google'}
             </button>
+
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-slate-200" />
+              <div className="text-xs font-medium text-slate-500">OR</div>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <form onSubmit={handleEmailLogin} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full items-center justify-center rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Sending…' : 'Send magic link'}
+              </button>
+            </form>
 
             <p className="mt-4 text-center text-xs text-slate-500">
               New here?{' '}

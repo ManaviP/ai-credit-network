@@ -3,6 +3,7 @@ fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
 email-validator==2.1.0
+websockets==15.0.1
 
 # Database - PostgreSQL & SQLAlchemy
 sqlalchemy==2.0.25
@@ -12,7 +13,7 @@ psycopg2-binary==2.9.9
 aiosqlite==0.20.0
 
 # Supabase
-supabase==2.3.4
+supabase==2.28.0
 
 # Graph Database - Neo4j
 neo4j==5.16.0
@@ -28,13 +29,13 @@ kombu==5.3.5
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-pyjwt==2.8.0
+pyjwt==2.11.0
 python-dotenv==1.0.1
 cryptography==42.0.0
 
 # Validation & Serialization
-pydantic==2.5.3
-pydantic-settings==2.1.0
+pydantic==2.12.5
+pydantic-settings==2.13.1
 
 # HTTP Client
 httpx==0.28.1

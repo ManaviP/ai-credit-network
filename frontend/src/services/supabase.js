@@ -1,7 +1,20 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+function normalizeSupabaseKey(key) {
+  if (!key) return key
+  const trimmed = String(key).trim().replace(/^['"]|['"]$/g, '')
+  // Handle accidental concatenation: "<jwt>.<sb_publishable_...>"
+  if (trimmed.includes('sb_') && trimmed.includes('.')) {
+    const tail = trimmed.split('.').at(-1)
+    if (tail?.startsWith('sb_')) return tail
+  }
+  return trimmed
+}
+
+const supabaseAnonKey = normalizeSupabaseKey(rawAnonKey)
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error(
@@ -23,6 +36,17 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: {
       redirectTo: `${window.location.origin}/auth/callback`,
+    },
+  })
+  if (error) throw error
+  return data
+}
+
+export async function signInWithEmailOtp(email) {
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   })
   if (error) throw error

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabase'
 import { authAPI } from '../services/api'
@@ -8,8 +8,13 @@ export default function AuthCallback() {
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const [error, setError] = useState(null)
+  const ranOnceRef = useRef(false)
 
   useEffect(() => {
+    // React 18 StrictMode runs effects twice in dev; PKCE exchange must only run once.
+    if (ranOnceRef.current) return
+    ranOnceRef.current = true
+
     const handleAuthRedirect = async () => {
       try {
         const params = new URLSearchParams(window.location.search)
@@ -19,17 +24,30 @@ export default function AuthCallback() {
           throw new Error(oauthErrorDescription || oauthError)
         }
 
-        // PKCE flow: if we have a code, exchange it for a session first.
+        // If we already have a session, don't try to exchange again.
+        const { data: sessionDataBefore, error: sessionBeforeError } = await supabase.auth.getSession()
+        if (sessionBeforeError) throw sessionBeforeError
+
+        let session = sessionDataBefore?.session
+
+        // PKCE flow: if we have a code and no session yet, exchange it.
         const code = params.get('code')
-        if (code) {
+        if (!session?.access_token && code) {
           const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
           if (exchangeError) throw exchangeError
-          if (!data?.session) throw new Error('Failed to establish session')
+          session = data?.session || null
+
+          // Remove the code from the URL to prevent retries on refresh.
+          try {
+            window.history.replaceState({}, document.title, '/auth/callback')
+          } catch {
+            // ignore
+          }
         }
 
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
         if (sessionError) throw sessionError
-        const session = sessionData?.session
+        session = sessionData?.session
         if (!session?.access_token) {
           throw new Error('No session found. Please try signing in again.')
         }

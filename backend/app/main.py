@@ -16,18 +16,19 @@ from app.routers import auth, users, communities, loans, scoring, admin
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
-    print("🚀 Starting AI Community Credit Network API...")
-    print(f"📊 Environment: {settings.ENVIRONMENT}")
-    print(f"🗄️  Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else 'configured'}")
-    print(f"🔗 Neo4j: {settings.NEO4J_URI}")
+    # Avoid emojis here: Windows consoles may default to cp1252 and crash on startup.
+    print("Starting AI Community Credit Network API...")
+    print(f"Environment: {settings.ENVIRONMENT}")
+    print(f"Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else 'configured'}")
+    print(f"Neo4j: {settings.NEO4J_URI}")
     
     yield
     
     # Shutdown
-    print("🛑 Shutting down...")
+    print("Shutting down...")
     await neo4j_service.close()
     await engine.dispose()
-    print("✅ Cleanup complete")
+    print("Cleanup complete")
 
 
 # Create FastAPI app
