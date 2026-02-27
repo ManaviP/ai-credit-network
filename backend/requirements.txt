@@ -1,0 +1,61 @@
+# FastAPI & Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+email-validator==2.1.0
+
+# Database - PostgreSQL & SQLAlchemy
+sqlalchemy==2.0.25
+alembic==1.13.1
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Supabase
+supabase==2.3.4
+
+# Graph Database - Neo4j
+neo4j==5.16.0
+
+# Redis & Caching
+redis==5.0.1
+hiredis==2.3.2
+
+# Celery & Task Queue
+celery==5.3.6
+kombu==5.3.5
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+pyjwt==2.8.0
+python-dotenv==1.0.1
+cryptography==42.0.0
+
+# Validation & Serialization
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# HTTP Client
+httpx==0.25.2
+aiohttp==3.9.3
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+
+# ML & MLOps (Phase 2 ready)
+mlflow==2.10.0
+scikit-learn==1.4.0
+
+# Testing
+# pytest must be <8 to satisfy pytest-asyncio dependency
+pytest<8,>=7.0.0
+pytest-asyncio==0.23.4
+pytest-cov==4.1.0
+faker==22.6.0
+# Removed conflicting httpx==0.26.0 (supabase requires httpx<0.26).
+
+# Utilities
+python-dateutil==2.8.2
+# pytz must be <2024 to satisfy mlflow and other deps
+pytz<2024
