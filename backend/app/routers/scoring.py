@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.core import get_db, get_current_user
 from app.models import User
 from app.services import TrustScoreCalculator
-from app.tasks.scoring_tasks import compute_trust_score_task
+from app.tasks.celery_app import compute_trust_score_task
 
 router = APIRouter(prefix="/scoring", tags=["Scoring"])
 

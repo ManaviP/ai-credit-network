@@ -10,14 +10,28 @@ export const useAuthStore = create(
       isAuthenticated: false,
       hydrated: false,
 
-      login: (tokens, userId) => {
-        localStorage.setItem('access_token', tokens.access_token)
-        localStorage.setItem('refresh_token', tokens.refresh_token)
+      setSession: (session) => {
+        const accessToken = session?.access_token || null
+        const refreshToken = session?.refresh_token || null
+        const user = session?.user || null
+
+        if (accessToken) {
+          localStorage.setItem('access_token', accessToken)
+        } else {
+          localStorage.removeItem('access_token')
+        }
+
+        if (refreshToken) {
+          localStorage.setItem('refresh_token', refreshToken)
+        } else {
+          localStorage.removeItem('refresh_token')
+        }
+
         set({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          isAuthenticated: true,
-          user: { id: userId },
+          accessToken,
+          refreshToken,
+          user,
+          isAuthenticated: Boolean(user),
         })
       },
 
@@ -32,7 +46,7 @@ export const useAuthStore = create(
         })
       },
 
-      setUser: (user) => set({ user }),
+      setUser: (user) => set({ user, isAuthenticated: Boolean(user) }),
       setHydrated: (hydrated) => set({ hydrated }),
     }),
     {
